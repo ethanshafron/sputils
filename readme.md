@@ -1,6 +1,6 @@
-# sputils, aka SPatialUTILS
+# sputils, aka SPatial UTILitieS
 
-### A perhaps moderately useful library for common tasks in remote sensing
+### A perhaps moderately useful library for common tasks in remote sensing and predictive mapping
 
 -------------------------------------------------------------------------------
 

@@ -84,3 +84,5 @@ Notes:
 
 
 ```
+
+Other functionality includes easy reading/writing data in chunks, which can be used for a variety of tasks, especially on very large rasters.

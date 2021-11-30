@@ -52,6 +52,8 @@ Band names are pulled from band descriptions if they exist, else they are just i
 You can fit statsmodels or sklearn models with this method. If you use a formula, it will use statsmodels, if you use the X/Y _bands arguments, it will use sklearn.
 Gradient boosting, random forests, and multilayer perceptron are all available right now, for either classification or regression. For statsmodels, you can use GLMs, OLS, or mixed linear models. The fit_model() method returns statsmodels or sklearn model objects.
 
+NOTE that the sample_size argument in m.fit_model() will NOT include any nodata pixels. Also, if you can't read the entire raster into memory, this method will still run with whatever sample size you give it, but the sampling algorithm is quite slow at this point unless the whole raster is in memory.
+
 ```
 >>>m.fit_model("OLS", formula = "elevation~slope", sample_size = 40000) 
 <statsmodels.regression.linear_model.RegressionResultsWrapper object at 0x7f73547443d0>

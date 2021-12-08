@@ -1,6 +1,6 @@
-# sputils, aka SPatialUTILS
+# sputils, aka SPatial UTILitieS
 
-### A perhaps moderately useful library for common tasks in remote sensing
+### A perhaps moderately useful library for common tasks in remote sensing and predictive mapping
 
 -------------------------------------------------------------------------------
 
@@ -11,11 +11,23 @@ Some basic functionality:
 >>>from sputils.map_utils import GeoMap
 >>>f = "/home/es182091e/libtest.tif"
 >>>m = GeoMap(f)
+```
+
+Get the WKT projection info
+```
 >>>m.proj
 'PROJCS["NAD83 / UTM zone 13N",GEOGCS["NAD83",DATUM["North_American_Datum_1983",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],AUTHORITY["EPSG","6269"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4269"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",-105],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","26913"]]'
+```
+
+Get the file name of the underlying dataset
+```
 >>>m.name
 '/home/es182091e/libtest.tif'
->>>m.to_table(bands=[1,2])
+```
+
+Convert raster from bandsXcolsXrows to rows*colsXbands for pixel-wise model building.
+```
+>>>m.to_table(bands=[1,2]) 
 array([[-9999., -9999.],
        [-9999., -9999.],
        [-9999., -9999.],
@@ -23,12 +35,27 @@ array([[-9999., -9999.],
        [-9999., -9999.],
        [-9999., -9999.],
        [-9999., -9999.]], dtype=float32)
+```
 
+Get the nodata value
+```
 >>>m.ndv
 -9999.0
->>>m.band_names
+```
+
+Band names are pulled from band descriptions if they exist, else they are just ints mapped to ints in a dict. Set band descriptions though, it's worth it.
+```
+>>>m.band_names ### mapping of variable names to band numbers in dict
 {'elevation': 1, 'slope': 2}
->>>m.fit_model("OLS", formula = "elevation~slope", sample_size = 40000)
+```
+
+You can fit statsmodels or sklearn models with this method. If you use a formula, it will use statsmodels, if you use the X/Y _bands arguments, it will use sklearn.
+Gradient boosting, random forests, and multilayer perceptron are all available right now, for either classification or regression. For statsmodels, you can use GLMs, OLS, or mixed linear models. The fit_model() method returns statsmodels or sklearn model objects.
+
+NOTE that the sample_size argument in m.fit_model() will NOT include any nodata pixels. Also, if you can't read the entire raster into memory, this method will still run with whatever sample size you give it, but the sampling algorithm is quite slow at this point unless the whole raster is in memory.
+
+```
+>>>m.fit_model("OLS", formula = "elevation~slope", sample_size = 40000) 
 <statsmodels.regression.linear_model.RegressionResultsWrapper object at 0x7f73547443d0>
 >>>m.fit_model("OLS", formula = "elevation~slope", sample_size = 40000).summary()
                             OLS Regression Results
@@ -59,3 +86,5 @@ Notes:
 
 
 ```
+
+Other functionality includes easy reading/writing data in chunks, which can be used for a variety of tasks, especially on very large rasters.

@@ -52,57 +52,52 @@ def overlap(img1, img2):
 
 
 
-def add_pixel_fn(filename: str, method : str) -> None:
+def add_pixel_fn(filename: str, f: str, ndvs : list) -> None:
     """inserts pixel-function into vrt file named 'filename'
     Args:
         filename (:obj:`string`): name of file, into which the function will be inserted
-        method (str) - average,mode, min, or max. pixel function to use for overlaps.
-        resample_name (:obj:`string`): name of resampling method
+        f (str): GDAL format type of output. Right now only supporting Float32 and UInt16.
+        ndvs (list): list of the values to treat as no data. The first value will be the one written out.
+                    Also can only handle 2 values at most, requires at least 1.
     """
+    formats = {"UInt16":"uint16",
+               "Float32":"np.float64"}
+    
+    ndv1 = ndvs[0]
+    ndv2 = ndv1 if len(ndvs)<2 else ndvs[1]
 
-    header = """  <VRTRasterBand dataType="UInt16" band="1" subClass="VRTDerivedRasterBand">"""
+    header = """  <VRTRasterBand dataType="{dt}" band="1" subClass="VRTDerivedRasterBand">""".format(dt = f)
     contents = """
-    <PixelFunctionType>{}</PixelFunctionType>
+    <PixelFunctionType>average</PixelFunctionType>
     <PixelFunctionLanguage>Python</PixelFunctionLanguage>
     <PixelFunctionCode><![CDATA[
 import numpy as np
 def average(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize,raster_ysize, buf_radius, gt, **kwargs):
-    div = np.zeros(in_ar[0].shape)
-    for i in range(len(in_ar)):
-        div += (in_ar[i] != 0)
-    div[div == 0] = 1
-
-    y = np.sum(in_ar, axis = 0, dtype = 'uint16')
-    y = y / div
-    np.clip(y,0,70000, out = out_ar)
-
-def mode(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize,raster_ysize, buf_radius, gt, **kwargs):
-    mode_arr = stats.mode(in_ar, axis=0, nan_policy = 'omit')[0][0]
-    np.clip(mode_arr, 0,70000, out = out_ar)
-
-def max(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize,raster_ysize, buf_radius, gt, **kwargs):
-    y = np.array(in_ar).min(axis=0).astype('uint16')    
-    np.clip(y,0,70000, out = out_ar)
-
-def max(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize,raster_ysize, buf_radius, gt, **kwargs):
-    y = np.array(in_ar).max(axis=0).astype('uint16')    
-    np.clip(y,0,70000, out = out_ar)
+    x = np.ma.masked_equal(in_ar, {ndv1})
+    x = np.ma.masked_equal(x, {ndv2})
+    np.nanmean(x, axis = 0,out = out_ar, dtype = {nptype})
+    mask = np.all(x.mask,axis = 0)
+    out_ar[mask] = {ndv1}
 
 ]]>
-    </PixelFunctionCode>""".format(method)
+    </PixelFunctionCode>""".format(dt = f,
+                                   ndv1 = ndv1,
+                                   ndv2 = ndv2,
+                                   nptype = formats[f]
+                                  )
 
     lines = open(filename, 'r').readlines()
     lines[3] = header
     lines.insert(4, contents)
     open(filename, 'w').write("".join(lines))
 
-def mosaic_rasters(output, files, rm_vrt = True, method = "average"):
+def mosaic_rasters(output: str, files: list, ndvs : list, rm_vrt = True) -> None:
     out_name = output.replace(".tif", "")
     gdal.SetConfigOption('GDAL_VRT_ENABLE_PYTHON', 'YES')
 
     gdal.BuildVRT(f'{out_name}.vrt', files)
 
-    add_pixel_fn(f'{out_name}.vrt', method)
+    add_pixel_fn(f'{out_name}.vrt', "Float32", ndvs)
 
     ds = gdal.Open(f'{out_name}.vrt')
     translateoptions = gdal.TranslateOptions(gdal.ParseCommandLine("-co BIGTIFF=YES -co COMPRESS=LZW"))

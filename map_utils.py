@@ -179,10 +179,11 @@ class GeoMap:
         natural_breaks = self.rows // rowsize
         leftovers = self.rows % rowsize
         max_natural_row = natural_breaks*rowsize
-        for i, offset in enumerate(range(0, max_natural_row, rowsize)):
-            if i+1 < natural_breaks:
+        for i, offset in enumerate(range(0, max_natural_row+rowsize, rowsize)):
+            print(i, offset)
+            if i+1 <= natural_breaks:
                 offsets.append((offset, rowsize))
-            else:
+            elif offset + leftovers == self.rows:
                 offsets.append((max_natural_row, leftovers))
         return offsets 
     def make_data_table_chunks(self, **kwargs):
